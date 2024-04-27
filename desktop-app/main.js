@@ -1,5 +1,6 @@
 const { app, BrowserWindow } = require("electron");
 const path = require('node:path')
+const isDev = import('electron-is-dev');
 
 const createWindow = () => {
   const win = new BrowserWindow({
@@ -10,7 +11,11 @@ const createWindow = () => {
     }
   });
 
-  win.loadFile("index.html");
+  if (isDev) {
+    win.loadURL("http://localhost:3000/");
+  } else {
+    win.loadFile(path.join(__dirname, '../pipe-blender/public.index.html'));
+  }
 };
 
 app.whenReady().then(() => {
