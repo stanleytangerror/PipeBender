@@ -1,3 +1,38 @@
+.container {
+    display: flex;
+    height: 100%; /* Full height of the viewport */
+}
+  
+.left-col {
+    flex: 1; /* Take up remaining space */
+    overflow-y: auto; /* Add vertical scrollbar if content exceeds height */
+}
+
+.right-col {
+    flex: 0 0 200px;
+    /* Fixed width of 200px */
+    height: 100%;
+    /* Stretch panel B to full height */
+}
+
+.panel-points {
+    flex: 1;
+    /* Take up remaining space */
+    min-height: 100px;
+    /* Minimum height of panel A */
+    max-height: 300px;
+    /* Maximum height of panel A */
+    overflow-y: auto;
+    /* Add vertical scrollbar if content exceeds maximum height */
+}
+
+.panel-results {
+    flex: 1;
+    /* Take up remaining space */
+}
+
 .panel {
-    border:1px solid black;
+    border: 1px solid black;
+    margin: 5px;
+    padding: 10px;
 }

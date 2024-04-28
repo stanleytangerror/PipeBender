@@ -192,49 +192,51 @@ function PipeBender() {
   };
 
   return (
-    <div>
-      <div className="panel">
-        <h2>空间点</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>No.</th>
-              <th>X</th>
-              <th>Y</th>
-              <th>Z</th>
-            </tr>
-          </thead>
-          <tbody>
-            {points.map((point, index) => (
-              <tr key={index}>
-                <th>
-                  {index}
-                </th>
-                <th><input
-                  type="number"
-                  value={point.x}
-                  onChange={(e) => handlePointChange(index, 'x', parseFloat(e.target.value))}
-                /></th>
-                <th><input
-                  type="number"
-                  value={point.y}
-                  onChange={(e) => handlePointChange(index, 'y', parseFloat(e.target.value))}
-                /></th>
-                <th><input
-                  type="number"
-                  value={point.z}
-                  onChange={(e) => handlePointChange(index, 'z', parseFloat(e.target.value))}
-                /></th>
+    <div className="container">
+      <div className="left-col">
+        <div className="panel panel-points">
+          <h2>空间点</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>No.</th>
+                <th>X</th>
+                <th>Y</th>
+                <th>Z</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {points.map((point, index) => (
+                <tr key={index}>
+                  <th>
+                    {index}
+                  </th>
+                  <th><input
+                    type="number"
+                    value={point.x}
+                    onChange={(e) => handlePointChange(index, 'x', parseFloat(e.target.value))}
+                  /></th>
+                  <th><input
+                    type="number"
+                    value={point.y}
+                    onChange={(e) => handlePointChange(index, 'y', parseFloat(e.target.value))}
+                  /></th>
+                  <th><input
+                    type="number"
+                    value={point.z}
+                    onChange={(e) => handlePointChange(index, 'z', parseFloat(e.target.value))}
+                  /></th>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="panel panel-results">
+          <h2>计算结果</h2>
+          {calculateResult !== null ? <CalculateResultUI result={calculateResult} degreeFormat={degreeFormat} /> : null}
+        </div>
       </div>
-      <div className="panel">
-        <h2>计算结果</h2>
-        {calculateResult !== null ? <CalculateResultUI result={calculateResult} degreeFormat={degreeFormat} /> : null}
-      </div>
-      <div className="panel">
+      <div className="panel right-col">
         <div>
           弯管半径:
           <input
@@ -256,8 +258,6 @@ function PipeBender() {
         <h2>Operators</h2>
         <button onClick={() => handleCalculate(points, radius)}>Calculate</button>
         <button onClick={handleSave}>Save</button>
-      </div>
-      <div className="panel">
         <h2>Execution</h2>
         <button onClick={() => handleCalculate(points, radius)}>Calculate</button>
         <button onClick={handleSave}>Save</button>
