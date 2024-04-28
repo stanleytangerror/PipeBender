@@ -76,15 +76,22 @@ function calcCurve(points: [Vec3, Vec3, Vec3], radius: number) {
 
 enum DegreeDisplayFormat { Format1 = 'format1', Format2 = 'format2' }
 
-function radianFormat(radian: number, format: DegreeDisplayFormat) {
+function radianFormat(radian: number, format: DegreeDisplayFormat, round: number) {
   const value = radian / Math.PI * 180;
   if (format === DegreeDisplayFormat.Format1) {
-    return `${value}°`;
+    return `${value.toFixed(round)}°`;
   } else {
     const decimal = Math.floor(value);
     const fractor = value - decimal;
-    return `${decimal}°${fractor * 60}'`;
+    return `${decimal}°${(fractor * 60).toFixed(round)}'`;
   }
+}
+
+interface DisplayStyle
+{
+  lengthRoundDigits: number;
+  radianRoundDigits: number;
+  degreeFormat: DegreeDisplayFormat;
 }
 
 function calcPipe(points: Array<Vec3>, radius: number) {
@@ -114,47 +121,49 @@ function calcPipe(points: Array<Vec3>, radius: number) {
   return { segments: segments, lastSegment: lastSegment, totalLength: totalLength };
 }
 
-function CurveSegmentUI(props: { index: number, curve: RoundedBend, degreeFormat: DegreeDisplayFormat }) {
+function CurveSegmentUI(props: { index: number, curve: RoundedBend, style: DisplayStyle }) {
   const index = props.index;
   const curve = props.curve;
-  const degreeFormat = props.degreeFormat;
+  const style = props.style;
 
   return (
     <div>
       <span>弯头{index + 1}长度/角度</span>
-      <span>{curve.length()}/{radianFormat(curve.centralAngle, degreeFormat)}</span>
+      <span>{curve.length().toFixed(style.lengthRoundDigits)}/{radianFormat(curve.centralAngle, style.degreeFormat, style.radianRoundDigits)}</span>
     </div>
   );
 }
 
-function StraightSegmentUI(props: { index: number, straight: StraightResult }) {
+function StraightSegmentUI(props: { index: number, straight: StraightResult, style: DisplayStyle }) {
   const index = props.index;
   const straight = props.straight;
+  const style = props.style;
+  
   return (
     <div>
       <span>直段{index + 1}长度</span>
-      <span>{straight.length()}</span>
+      <span>{straight.length().toFixed(style.lengthRoundDigits)}</span>
     </div>
   );
 }
 
-function CalculateResultUI(props: { result: CalculateResult, degreeFormat: DegreeDisplayFormat }) {
+function CalculateResultUI(props: { result: CalculateResult, style: DisplayStyle }) {
   const calculateResult = props.result;
-  const degreeFormat = props.degreeFormat;
+  const style = props.style;
 
   return (
     <div>
       {
         calculateResult.segments.map((segments, index) => (
           <div>
-            <StraightSegmentUI index={index + 1} straight={segments[0]}/>
-            <CurveSegmentUI index={index + 1} curve={segments[1]} degreeFormat={degreeFormat}/>
+            <StraightSegmentUI index={index} straight={segments[0]} style={style}/>
+            <CurveSegmentUI index={index} curve={segments[1]} style={style}/>
           </div>
         ))
       }
-      <StraightSegmentUI index={calculateResult?.segments.length + 1} straight={calculateResult?.lastSegment!}/>
+      <StraightSegmentUI index={calculateResult?.segments.length} straight={calculateResult?.lastSegment!} style={style}/>
       <div><span>展开长度</span>
-      <span>{calculateResult.totalLength}</span>
+      <span>{calculateResult.totalLength.toFixed(style.lengthRoundDigits)}</span>
       </div>
     </div>
   );                    
@@ -163,8 +172,7 @@ function CalculateResultUI(props: { result: CalculateResult, degreeFormat: Degre
 function PipeBender() {
   const [points, setPoints] = useState<Array<Vec3>>([new Vec3(0, 0, 0), new Vec3(0, 0, -900), new Vec3(300, 1000, -300), new Vec3(300, 2000, -300)]);
   const [radius, setRadius] = useState<number>(200);
-  const [degreeFormat, setDegreeFormat] = useState<DegreeDisplayFormat>(DegreeDisplayFormat.Format1);
-  const [roundDigits, setRoundDigits] = useState<number>(1);
+  const [displayStyle, setDisplayStyle] = useState<DisplayStyle>({ radianRoundDigits: 2, lengthRoundDigits: 1, degreeFormat: DegreeDisplayFormat.Format1 });
   const [calculateResult, setCalculateResult] = useState<CalculateResult | null>(null);
 
   const handlePointChange = (index: number, field: keyof Vec3, value: number) => {
@@ -190,6 +198,11 @@ function PipeBender() {
   const handleSave = () => {
     // Save data
   };
+
+  const handleDegreeFormatChange = (degreeFormat: DegreeDisplayFormat) => {
+    const updatedStyle = {...displayStyle, degreeFormat: degreeFormat};
+    setDisplayStyle(updatedStyle);
+  }
 
   return (
     <div className="container">
@@ -233,7 +246,7 @@ function PipeBender() {
         </div>
         <div className="panel panel-results">
           <h2>计算结果</h2>
-          {calculateResult !== null ? <CalculateResultUI result={calculateResult} degreeFormat={degreeFormat} /> : null}
+          {calculateResult !== null ? <CalculateResultUI result={calculateResult} style={displayStyle} /> : null}
         </div>
       </div>
       <div className="panel right-col">
@@ -248,8 +261,8 @@ function PipeBender() {
         <div>
           角度格式
           <select
-            value={degreeFormat}
-            onChange={(e) => setDegreeFormat(e.target.value as DegreeDisplayFormat)}
+            value={displayStyle.degreeFormat}
+            onChange={(e) => handleDegreeFormatChange(e.target.value as DegreeDisplayFormat)}
           >
             <option value={DegreeDisplayFormat.Format1}>0.00°</option>
             <option value={DegreeDisplayFormat.Format2}>0°00'</option>
