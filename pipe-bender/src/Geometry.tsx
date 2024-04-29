@@ -19,6 +19,12 @@ export class Arc
   length() {
     return this.centralAngle * this.radius;
   }
+
+  perpendicular() {
+    const dir0 = this.start.clone().subtract(this.center);
+    const dir1 = this.end.clone().subtract(this.center);
+    return dir0.clone().cross(dir1).normalize();
+  }
 }
 
 export class Segment
@@ -93,7 +99,7 @@ export function calcPipe(points: Array<Vec3>, radius: number) {
   const arcs = Range(1, points.length - 1)
     .map(i => calcCurve([points[i - 1], points[i], points[i + 1]], radius));
 
-  const segments = Range(1, points.length - 1)
+  const segments = Range(0, points.length - 1)
     .map((_, i) => new Segment(points[i], points[i + 1]));
   segments
     .forEach((s, i) => {
@@ -106,4 +112,12 @@ export function calcPipe(points: Array<Vec3>, radius: number) {
     });
   
   return new BendedPipe(segments, arcs);
+}
+
+export function calcArcsAngle(arcs: [Arc, Arc]) {
+  const dir0 = arcs[0].perpendicular();
+  const dir1 = arcs[1].perpendicular();
+
+  const angle = Math.acos(dir0.innerProduct(dir1));
+  return Math.min(Math.PI - angle, angle);
 }

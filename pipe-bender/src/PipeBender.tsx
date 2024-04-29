@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './PipeBender.css';
 import { Vec3 } from 'vec3';
-import { Arc, Segment, BendedPipe, calcPipe } from './Geometry';
+import { Arc, Segment, BendedPipe, calcPipe, calcArcsAngle } from './Geometry';
 
 enum DegreeDisplayFormat { Format1 = 'format1', Format2 = 'format2' }
 
@@ -23,14 +23,14 @@ interface DisplayStyle
   degreeFormat: DegreeDisplayFormat;
 }
 
-function CurveSegmentUI(props: { index: number, curve: Arc, style: DisplayStyle }) {
-  const index = props.index;
+function CurveSegmentUI(props: { no: number, curve: Arc, style: DisplayStyle }) {
+  const no = props.no;
   const curve = props.curve;
   const style = props.style;
 
   return (
     <tr>
-      <th>弯头{index + 1}长度/角度</th>
+      <th>弯头{no}长度/角度</th>
       <th>
         {curve.length().toFixed(style.lengthRoundDigits)}/{radianFormat(curve.centralAngle, style.degreeFormat, style.radianRoundDigits)}
       </th>
@@ -38,14 +38,14 @@ function CurveSegmentUI(props: { index: number, curve: Arc, style: DisplayStyle 
   );
 }
 
-function StraightSegmentUI(props: { index: number, straight: Segment, style: DisplayStyle }) {
-  const index = props.index;
+function StraightSegmentUI(props: { no: number, straight: Segment, style: DisplayStyle }) {
+  const no = props.no;
   const straight = props.straight;
   const style = props.style;
   
   return (
     <tr>
-      <th>直段{index + 1}长度</th>
+      <th>直段{no}长度</th>
       <th>{straight.length().toFixed(style.lengthRoundDigits)}</th>
     </tr>
   );
@@ -55,17 +55,35 @@ function CalculateResultUI(props: { result: BendedPipe, style: DisplayStyle }) {
   const bendedPipe = props.result;
   const style = props.style;
 
-  const sequence = bendedPipe.segments.flatMap<Segment | Arc>((s, i) => 
-    i >= bendedPipe.arcs.length ? s : [s, bendedPipe.arcs[i]]);
+  let sequence: Array<{ no: number, item: Segment }> = [];
+  let i = 0;
+  for (; i < bendedPipe.arcs.length; ++i) {
+    sequence.push({ no: i + 1, item: bendedPipe.segments[i] });
+    sequence.push({ no: i + 1, item: bendedPipe.arcs[i] });
+  }
+  sequence.push({ no: i + 1, item: bendedPipe.segments[i] });
+
+  const arcAngles = bendedPipe.arcs.slice(0, -1)
+    .map((_, i) => calcArcsAngle([bendedPipe.arcs[i], bendedPipe.arcs[i+1]]));
 
   return (
     <tbody>
       {
-        sequence.map((s, index) => 
-          s instanceof Segment ? 
-          (<StraightSegmentUI index={index} straight={s} style={style}/>) :
-          (<CurveSegmentUI index={index} curve={s} style={style}/>)
+        sequence.map(s => 
+          s.item instanceof Segment ? 
+          (<StraightSegmentUI no={s.no} straight={s.item} style={style}/>) :
+          (<CurveSegmentUI no={s.no} curve={s.item} style={style}/>)
         )
+      }
+      {
+        arcAngles.map((v, index) => (
+        <tr>
+          <th>弯头{index + 1}-{index + 2}斜势</th>
+          <th>
+            {radianFormat(v, style.degreeFormat, style.radianRoundDigits)}
+          </th>
+        </tr>
+        ))
       }
       <tr>
         <th>展开长度</th>
