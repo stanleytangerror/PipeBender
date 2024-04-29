@@ -53,19 +53,20 @@ function CalculateResultUI(props: { result: BendedPipe, style: DisplayStyle }) {
   const bendedPipe = props.result;
   const style = props.style;
 
+  const sequence = bendedPipe.segments.flatMap<Segment | Arc>((s, i) => 
+    i >= bendedPipe.arcs.length ? s : [s, bendedPipe.arcs[i]]);
+
   return (
     <div>
       {
-        bendedPipe.segments.map((segments, index) => (
-          <div>
-            <StraightSegmentUI index={index} straight={segments[0]} style={style}/>
-            <CurveSegmentUI index={index} curve={segments[1]} style={style}/>
-          </div>
-        ))
+        sequence.map((s, index) => 
+          s instanceof Segment ? 
+          (<StraightSegmentUI index={index} straight={s} style={style}/>) :
+          (<CurveSegmentUI index={index} curve={s} style={style}/>)
+        )
       }
-      <StraightSegmentUI index={bendedPipe?.segments.length} straight={bendedPipe?.lastSegment!} style={style}/>
       <div><span>展开长度</span>
-      <span>{bendedPipe.totalLength.toFixed(style.lengthRoundDigits)}</span>
+      <span>{bendedPipe.totalLength().toFixed(style.lengthRoundDigits)}</span>
       </div>
     </div>
   );                    

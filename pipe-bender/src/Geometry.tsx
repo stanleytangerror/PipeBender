@@ -36,13 +36,28 @@ export class Segment
   }
 }
 
-export interface BendedPipe
+export class BendedPipe
 {
-  segments: Array<[Segment, Arc]>;
-  lastSegment: Segment;
-  totalLength: number;
+  segments: Array<Segment>;
+  arcs: Array<Arc>;
+
+  constructor(segments: Array<Segment>, arcs: Array<Arc>) {
+    this.segments = segments;
+    this.arcs = arcs;
+  }
+
+  totalLength() {
+    return this.segments.map(p => p.length()).reduce((acc, v) => acc + v, 0) 
+        + this.arcs.map(p => p.length()).reduce((acc, v) => acc + v, 0);
+  }
 }
 
+function Range(start: number, end: number) {
+  const gen = function*(start: number, end: number): Iterable<number> {
+    for (let i = start; i < end; ++i) yield i;
+  };
+  return Array.from(gen(start, end));
+}
 
 function calcCurve(points: [Vec3, Vec3, Vec3], radius: number) {
   /* p0 <--v10--- p1
@@ -74,28 +89,22 @@ function calcCurve(points: [Vec3, Vec3, Vec3], radius: number) {
 }
 
 export function calcPipe(points: Array<Vec3>, radius: number) {
-  let segments: Array<[Segment, Arc]> = [];
-  let totalLength: number = 0;
-
-  let lastCurve: Arc | null = null;
-  let lastPoint: Vec3 = points[0];
   
-  for (let i : number = 1; i + 1 < points.length; ++i) {
-    const curPoint = points[i];
-    const nextPoint = points[i + 1];
+  const arcs = Range(1, points.length - 1)
+    .map(i => calcCurve([points[i - 1], points[i], points[i + 1]], radius));
 
-    const curve = calcCurve([lastPoint, curPoint, nextPoint], radius);
-    const straight = new Segment(lastCurve ? lastCurve.end : lastPoint, curve.start);
-    segments.push([straight, curve]);
-    
-    lastCurve = curve;
-    lastPoint = curPoint;
-    totalLength += straight.length();
-    totalLength += curve.length();
-  }
+  const segments = Range(1, points.length - 1)
+    .map((_, i) => new Segment(points[i], points[i + 1]));
+  segments
+    .forEach((s, i) => {
+      if (i < arcs.length) {
+        s.end = arcs[i].start;
+      } 
+      if (i > 0) {
+        s.start = arcs[i - 1].end;
+      }
+    });
+
   
-  let lastSegment = new Segment(lastCurve ? lastCurve.end : lastPoint, points[points.length - 1]);
-  totalLength += lastSegment.start.distanceTo(lastSegment.end);
-
-  return { segments: segments, lastSegment: lastSegment, totalLength: totalLength };
+  return new BendedPipe(segments, arcs);
 }
