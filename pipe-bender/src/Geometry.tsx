@@ -104,7 +104,6 @@ export function calcPipe(points: Array<Vec3>, radius: number) {
         s.start = arcs[i - 1].end;
       }
     });
-
   
   return new BendedPipe(segments, arcs);
 }
