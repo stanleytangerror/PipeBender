@@ -36,7 +36,7 @@ export class Segment
   }
 }
 
-export interface CalculateResult
+export interface BendedPipe
 {
   segments: Array<[Segment, Arc]>;
   lastSegment: Segment;

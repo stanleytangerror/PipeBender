@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './PipeBender.css';
 import { Vec3 } from 'vec3';
-import { Arc, Segment, CalculateResult, calcPipe } from './Geometry';
+import { Arc, Segment, BendedPipe, calcPipe } from './Geometry';
 
 enum DegreeDisplayFormat { Format1 = 'format1', Format2 = 'format2' }
 
@@ -49,23 +49,23 @@ function StraightSegmentUI(props: { index: number, straight: Segment, style: Dis
   );
 }
 
-function CalculateResultUI(props: { result: CalculateResult, style: DisplayStyle }) {
-  const calculateResult = props.result;
+function CalculateResultUI(props: { result: BendedPipe, style: DisplayStyle }) {
+  const bendedPipe = props.result;
   const style = props.style;
 
   return (
     <div>
       {
-        calculateResult.segments.map((segments, index) => (
+        bendedPipe.segments.map((segments, index) => (
           <div>
             <StraightSegmentUI index={index} straight={segments[0]} style={style}/>
             <CurveSegmentUI index={index} curve={segments[1]} style={style}/>
           </div>
         ))
       }
-      <StraightSegmentUI index={calculateResult?.segments.length} straight={calculateResult?.lastSegment!} style={style}/>
+      <StraightSegmentUI index={bendedPipe?.segments.length} straight={bendedPipe?.lastSegment!} style={style}/>
       <div><span>展开长度</span>
-      <span>{calculateResult.totalLength.toFixed(style.lengthRoundDigits)}</span>
+      <span>{bendedPipe.totalLength.toFixed(style.lengthRoundDigits)}</span>
       </div>
     </div>
   );                    
@@ -75,7 +75,7 @@ function PipeBender() {
   const [points, setPoints] = useState<Array<Vec3>>([new Vec3(0, 0, 0), new Vec3(0, 0, -900), new Vec3(300, 1000, -300), new Vec3(300, 2000, -300)]);
   const [radius, setRadius] = useState<number>(200);
   const [displayStyle, setDisplayStyle] = useState<DisplayStyle>({ radianRoundDigits: 2, lengthRoundDigits: 1, degreeFormat: DegreeDisplayFormat.Format1 });
-  const [calculateResult, setCalculateResult] = useState<CalculateResult | null>(null);
+  const [bendedPipe, setCalculateResult] = useState<BendedPipe | null>(null);
 
   const handlePointChange = (index: number, field: keyof Vec3, value: number) => {
     const updatedPoints = [...points];
@@ -148,7 +148,7 @@ function PipeBender() {
         </div>
         <div className="panel panel-results">
           <h2>计算结果</h2>
-          {calculateResult !== null ? <CalculateResultUI result={calculateResult} style={displayStyle} /> : null}
+          {bendedPipe !== null ? <CalculateResultUI result={bendedPipe} style={displayStyle} /> : null}
         </div>
       </div>
       <div className="panel right-col">
