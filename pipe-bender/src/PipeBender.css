@@ -5,6 +5,7 @@
   
 .left-col {
     flex: 1; /* Take up remaining space */
+    height: 100%; /* Full height of the viewport */
     overflow-y: auto; /* Add vertical scrollbar if content exceeds height */
 }
 
@@ -20,7 +21,7 @@
     /* Take up remaining space */
     min-height: 100px;
     /* Minimum height of panel A */
-    max-height: 300px;
+    max-height: 40%;
     /* Maximum height of panel A */
     overflow-y: auto;
     /* Add vertical scrollbar if content exceeds maximum height */
@@ -39,4 +40,5 @@
 
 tr {
     text-align: left;
+    vertical-align: top;
 }

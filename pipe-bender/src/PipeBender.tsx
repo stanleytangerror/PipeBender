@@ -3,7 +3,7 @@ import './PipeBender.css';
 import { Vec3 } from 'vec3';
 import { Arc, Segment, BendedPipe, calcPipe, calcArcsAngle } from './Geometry';
 
-enum DegreeDisplayFormat { Format1 = 'format1', Format2 = 'format2' }
+enum DegreeDisplayFormat { Format1 = '0.00°', Format2 = `0°00'` }
 
 function radianFormat(radian: number, format: DegreeDisplayFormat, round: number) {
   const value = radian / Math.PI * 180;
@@ -12,7 +12,7 @@ function radianFormat(radian: number, format: DegreeDisplayFormat, round: number
   } else {
     const decimal = Math.floor(value);
     const fractor = value - decimal;
-    return `${decimal}°${(fractor * 60).toFixed(round)}'`;
+    return `${decimal}°${(fractor * 60).toFixed(0)}'`;
   }
 }
 
@@ -119,13 +119,25 @@ function PipeBender() {
     }
   };
 
-  const handleSave = () => {
-    // Save data
-  };
-
   const handleDegreeFormatChange = (degreeFormat: DegreeDisplayFormat) => {
     const updatedStyle = {...displayStyle, degreeFormat: degreeFormat};
     setDisplayStyle(updatedStyle);
+  }
+
+  const handlePointReset = (index: number) => {
+    const updatedPoints = [...points];
+    updatedPoints[index] = new Vec3(0, 0, 0);
+    setPoints(updatedPoints);
+  }
+
+  const handlePointDelete = (index: number) => {
+    const updatedPoints = points.filter((s, i) => i !== index);
+    setPoints(updatedPoints);
+  }
+
+  const handlePointInsert = (index: number) => {
+    const updatedPoints = points.slice(0, index + 1).concat([new Vec3(0, 0, 0)]).concat(points.slice(index + 1));
+    setPoints(updatedPoints);
   }
 
   return (
@@ -140,6 +152,7 @@ function PipeBender() {
                 <th>X</th>
                 <th>Y</th>
                 <th>Z</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -163,6 +176,15 @@ function PipeBender() {
                     value={point.z}
                     onChange={(e) => handlePointChange(index, 'z', parseFloat(e.target.value))}
                   /></th>
+                  <th>
+                    <div>
+                      <button onClick={() => handlePointReset(index)}>归零</button>
+                      <button onClick={() => handlePointDelete(index)}>删除</button>
+                    </div>
+                      <button onClick={() => handlePointInsert(index)}>插入</button>
+                    <div>
+                    </div>
+                  </th>
                 </tr>
               ))}
             </tbody>
@@ -191,21 +213,24 @@ function PipeBender() {
           />
         </div>
         <div>
-          角度格式
-          <select
-            value={displayStyle.degreeFormat}
-            onChange={(e) => handleDegreeFormatChange(e.target.value as DegreeDisplayFormat)}
-          >
-            <option value={DegreeDisplayFormat.Format1}>0.00°</option>
-            <option value={DegreeDisplayFormat.Format2}>0°00'</option>
-          </select>
+          <span>角度格式</span>
+          {
+            Object.keys(DegreeDisplayFormat).map(k => {
+              const v = DegreeDisplayFormat[k as keyof typeof DegreeDisplayFormat];
+              return (
+                <div>
+                  <input 
+                    type="radio" 
+                    name="radianFormatGroup" 
+                    checked={v === displayStyle.degreeFormat} 
+                    onClick={() => handleDegreeFormatChange(v)} />
+                  <label>{v}</label>
+                </div>
+              )
+            })
+          }
         </div>
-        <h2>Operators</h2>
-        <button onClick={() => handleCalculate(points, radius)}>Calculate</button>
-        <button onClick={handleSave}>Save</button>
-        <h2>Execution</h2>
-        <button onClick={() => handleCalculate(points, radius)}>Calculate</button>
-        <button onClick={handleSave}>Save</button>
+        <button onClick={() => handleCalculate(points, radius)}>计算</button>
       </div>
     </div>
   );
