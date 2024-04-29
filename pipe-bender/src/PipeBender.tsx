@@ -1,171 +1,103 @@
 import React, { useState } from 'react';
 import './PipeBender.css';
 import { Vec3 } from 'vec3';
+import { Arc, Segment, BendedPipe, calcPipe, calcArcsAngle } from './Geometry';
 
-class RoundedBend
-{
-  center: Vec3;
-  start: Vec3;
-  end: Vec3;
-  centralAngle: number;
-  radius: number;
+enum DegreeDisplayFormat { Format1 = '0.00°', Format2 = `0°00'` }
 
-  constructor(center: Vec3, start: Vec3, end: Vec3, centralAngle: number, radius: number) {
-    this.center = center;
-    this.start = start;
-    this.end = end;
-    this.centralAngle = centralAngle;
-    this.radius = radius;
-  }
-
-  length() {
-    return this.centralAngle * this.radius;
-  }
-}
-
-class StraightResult
-{
-  start: Vec3;
-  end: Vec3;
-
-  constructor(start: Vec3, end: Vec3) {
-    this.start = start;
-    this.end = end;
-  }
-
-  length() {
-    return this.start.clone().distanceTo(this.end);
-  }
-}
-
-interface CalculateResult
-{
-  segments: Array<[StraightResult, RoundedBend]>;
-  lastSegment: StraightResult;
-  totalLength: number;
-}
-
-function calcCurve(points: [Vec3, Vec3, Vec3], radius: number) {
-  /* p0 <--v10--- p1
-   *             / |
-   *           /  v12
-   *          h    |
-   *         /     V
-   *               p2
-   */
-  const p0 = points[0];
-  const p1 = points[1];
-  const p2 = points[2];
-  
-  const v10 = p0.clone().subtract(p1).normalize();
-  const v12 = p2.clone().subtract(p1).normalize();
-  const h = v10.clone().add(v12).normalize();
-
-  const cosTheta = h.innerProduct(v10.clone().normalize());
-  const sinTheta = Math.sqrt(1.0 - cosTheta * cosTheta);
-  const t = radius / sinTheta;
-
-  const center = p1.clone().add(h.clone().scale(t));
-  const centralAngle = Math.PI - Math.acos(cosTheta) * 2;
-  const start = p1.clone().add(v10.clone().scale(cosTheta * t));
-  const end = p1.clone().add(v12.clone().scale(cosTheta * t));
-
-  let result = new RoundedBend(center, start, end, centralAngle, radius);
-  return result;
-}
-
-enum DegreeDisplayFormat { Format1 = 'format1', Format2 = 'format2' }
-
-function radianFormat(radian: number, format: DegreeDisplayFormat) {
+function radianFormat(radian: number, format: DegreeDisplayFormat, round: number) {
   const value = radian / Math.PI * 180;
   if (format === DegreeDisplayFormat.Format1) {
-    return `${value}°`;
+    return `${value.toFixed(round)}°`;
   } else {
     const decimal = Math.floor(value);
     const fractor = value - decimal;
-    return `${decimal}°${fractor * 60}'`;
+    return `${decimal}°${(fractor * 60).toFixed(0)}'`;
   }
 }
 
-function calcPipe(points: Array<Vec3>, radius: number) {
-  let segments: Array<[StraightResult, RoundedBend]> = [];
-  let totalLength: number = 0;
-
-  let lastCurve: RoundedBend | null = null;
-  let lastPoint: Vec3 = points[0];
-  
-  for (let i : number = 1; i + 1 < points.length; ++i) {
-    const curPoint = points[i];
-    const nextPoint = points[i + 1];
-
-    const curve = calcCurve([lastPoint, curPoint, nextPoint], radius);
-    const straight = new StraightResult(lastCurve ? lastCurve.end : lastPoint, curve.start);
-    segments.push([straight, curve]);
-    
-    lastCurve = curve;
-    lastPoint = curPoint;
-    totalLength += straight.length();
-    totalLength += curve.length();
-  }
-  
-  let lastSegment = new StraightResult(lastCurve ? lastCurve.end : lastPoint, points[points.length - 1]);
-  totalLength += lastSegment.start.distanceTo(lastSegment.end);
-
-  return { segments: segments, lastSegment: lastSegment, totalLength: totalLength };
+interface DisplayStyle
+{
+  lengthRoundDigits: number;
+  radianRoundDigits: number;
+  degreeFormat: DegreeDisplayFormat;
 }
 
-function CurveSegmentUI(props: { index: number, curve: RoundedBend, degreeFormat: DegreeDisplayFormat }) {
-  const index = props.index;
+function CurveSegmentUI(props: { no: number, curve: Arc, style: DisplayStyle }) {
+  const no = props.no;
   const curve = props.curve;
-  const degreeFormat = props.degreeFormat;
+  const style = props.style;
 
   return (
-    <div>
-      <span>弯头{index + 1}长度/角度</span>
-      <span>{curve.length()}/{radianFormat(curve.centralAngle, degreeFormat)}</span>
-    </div>
+    <tr>
+      <th>弯头{no}长度/角度</th>
+      <th>
+        {curve.length().toFixed(style.lengthRoundDigits)}/{radianFormat(curve.centralAngle, style.degreeFormat, style.radianRoundDigits)}
+      </th>
+    </tr>
   );
 }
 
-function StraightSegmentUI(props: { index: number, straight: StraightResult }) {
-  const index = props.index;
+function StraightSegmentUI(props: { no: number, straight: Segment, style: DisplayStyle }) {
+  const no = props.no;
   const straight = props.straight;
+  const style = props.style;
+  
   return (
-    <div>
-      <span>直段{index + 1}长度</span>
-      <span>{straight.length()}</span>
-    </div>
+    <tr>
+      <th>直段{no}长度</th>
+      <th>{straight.length().toFixed(style.lengthRoundDigits)}</th>
+    </tr>
   );
 }
 
-function CalculateResultUI(props: { result: CalculateResult, degreeFormat: DegreeDisplayFormat }) {
-  const calculateResult = props.result;
-  const degreeFormat = props.degreeFormat;
+function CalculateResultUI(props: { result: BendedPipe, style: DisplayStyle }) {
+  const bendedPipe = props.result;
+  const style = props.style;
+
+  let sequence: Array<{ no: number, item: Segment }> = [];
+  let i = 0;
+  for (; i < bendedPipe.arcs.length; ++i) {
+    sequence.push({ no: i + 1, item: bendedPipe.segments[i] });
+    sequence.push({ no: i + 1, item: bendedPipe.arcs[i] });
+  }
+  sequence.push({ no: i + 1, item: bendedPipe.segments[i] });
+
+  const arcAngles = bendedPipe.arcs.slice(0, -1)
+    .map((_, i) => calcArcsAngle([bendedPipe.arcs[i], bendedPipe.arcs[i+1]]));
 
   return (
-    <div>
+    <tbody>
       {
-        calculateResult.segments.map((segments, index) => (
-          <div>
-            <StraightSegmentUI index={index + 1} straight={segments[0]}/>
-            <CurveSegmentUI index={index + 1} curve={segments[1]} degreeFormat={degreeFormat}/>
-          </div>
+        sequence.map(s => 
+          s.item instanceof Segment ? 
+          (<StraightSegmentUI no={s.no} straight={s.item} style={style}/>) :
+          (<CurveSegmentUI no={s.no} curve={s.item} style={style}/>)
+        )
+      }
+      {
+        arcAngles.map((v, index) => (
+        <tr>
+          <th>弯头{index + 1}-{index + 2}斜势</th>
+          <th>
+            {radianFormat(v, style.degreeFormat, style.radianRoundDigits)}
+          </th>
+        </tr>
         ))
       }
-      <StraightSegmentUI index={calculateResult?.segments.length + 1} straight={calculateResult?.lastSegment!}/>
-      <div><span>展开长度</span>
-      <span>{calculateResult.totalLength}</span>
-      </div>
-    </div>
+      <tr>
+        <th>展开长度</th>
+        <th>{bendedPipe.totalLength().toFixed(style.lengthRoundDigits)}</th>
+      </tr>
+    </tbody>
   );                    
 }
 
 function PipeBender() {
   const [points, setPoints] = useState<Array<Vec3>>([new Vec3(0, 0, 0), new Vec3(0, 0, -900), new Vec3(300, 1000, -300), new Vec3(300, 2000, -300)]);
   const [radius, setRadius] = useState<number>(200);
-  const [degreeFormat, setDegreeFormat] = useState<DegreeDisplayFormat>(DegreeDisplayFormat.Format1);
-  const [roundDigits, setRoundDigits] = useState<number>(1);
-  const [calculateResult, setCalculateResult] = useState<CalculateResult | null>(null);
+  const [displayStyle, setDisplayStyle] = useState<DisplayStyle>({ radianRoundDigits: 2, lengthRoundDigits: 1, degreeFormat: DegreeDisplayFormat.Format1 });
+  const [bendedPipe, setCalculateResult] = useState<BendedPipe | null>(null);
 
   const handlePointChange = (index: number, field: keyof Vec3, value: number) => {
     const updatedPoints = [...points];
@@ -187,54 +119,91 @@ function PipeBender() {
     }
   };
 
-  const handleSave = () => {
-    // Save data
-  };
+  const handleDegreeFormatChange = (degreeFormat: DegreeDisplayFormat) => {
+    const updatedStyle = {...displayStyle, degreeFormat: degreeFormat};
+    setDisplayStyle(updatedStyle);
+  }
+
+  const handlePointReset = (index: number) => {
+    const updatedPoints = [...points];
+    updatedPoints[index] = new Vec3(0, 0, 0);
+    setPoints(updatedPoints);
+  }
+
+  const handlePointDelete = (index: number) => {
+    const updatedPoints = points.filter((s, i) => i !== index);
+    setPoints(updatedPoints);
+  }
+
+  const handlePointInsert = (index: number) => {
+    const updatedPoints = points.slice(0, index + 1).concat([new Vec3(0, 0, 0)]).concat(points.slice(index + 1));
+    setPoints(updatedPoints);
+  }
 
   return (
-    <div>
-      <div className="panel">
-        <h2>空间点</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>No.</th>
-              <th>X</th>
-              <th>Y</th>
-              <th>Z</th>
-            </tr>
-          </thead>
-          <tbody>
-            {points.map((point, index) => (
-              <tr key={index}>
-                <th>
-                  {index}
-                </th>
-                <th><input
-                  type="number"
-                  value={point.x}
-                  onChange={(e) => handlePointChange(index, 'x', parseFloat(e.target.value))}
-                /></th>
-                <th><input
-                  type="number"
-                  value={point.y}
-                  onChange={(e) => handlePointChange(index, 'y', parseFloat(e.target.value))}
-                /></th>
-                <th><input
-                  type="number"
-                  value={point.z}
-                  onChange={(e) => handlePointChange(index, 'z', parseFloat(e.target.value))}
-                /></th>
+    <div className="container">
+      <div className="left-col">
+        <div className="panel panel-points">
+          <h2>空间点</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>No.</th>
+                <th>X</th>
+                <th>Y</th>
+                <th>Z</th>
+                <th></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {points.map((point, index) => (
+                <tr key={index}>
+                  <th>
+                    {index}
+                  </th>
+                  <th><input
+                    type="number"
+                    value={point.x}
+                    onChange={(e) => handlePointChange(index, 'x', parseFloat(e.target.value))}
+                  /></th>
+                  <th><input
+                    type="number"
+                    value={point.y}
+                    onChange={(e) => handlePointChange(index, 'y', parseFloat(e.target.value))}
+                  /></th>
+                  <th><input
+                    type="number"
+                    value={point.z}
+                    onChange={(e) => handlePointChange(index, 'z', parseFloat(e.target.value))}
+                  /></th>
+                  <th>
+                    <div>
+                      <button onClick={() => handlePointReset(index)}>归零</button>
+                      <button onClick={() => handlePointDelete(index)}>删除</button>
+                    </div>
+                      <button onClick={() => handlePointInsert(index)}>插入</button>
+                    <div>
+                    </div>
+                  </th>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="panel panel-results">
+          <h2>计算结果</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>项目</th>
+                <th>取值</th>
+              </tr>
+            </thead>
+            {bendedPipe !== null ? <CalculateResultUI result={bendedPipe} style={displayStyle} /> : null}
+          </table>
+        </div>
       </div>
-      <div className="panel">
-        <h2>计算结果</h2>
-        {calculateResult !== null ? <CalculateResultUI result={calculateResult} degreeFormat={degreeFormat} /> : null}
-      </div>
-      <div className="panel">
+      <div className="panel right-col">
         <div>
           弯管半径:
           <input
@@ -244,23 +213,24 @@ function PipeBender() {
           />
         </div>
         <div>
-          角度格式
-          <select
-            value={degreeFormat}
-            onChange={(e) => setDegreeFormat(e.target.value as DegreeDisplayFormat)}
-          >
-            <option value={DegreeDisplayFormat.Format1}>0.00°</option>
-            <option value={DegreeDisplayFormat.Format2}>0°00'</option>
-          </select>
+          <span>角度格式</span>
+          {
+            Object.keys(DegreeDisplayFormat).map(k => {
+              const v = DegreeDisplayFormat[k as keyof typeof DegreeDisplayFormat];
+              return (
+                <div>
+                  <input 
+                    type="radio" 
+                    name="radianFormatGroup" 
+                    checked={v === displayStyle.degreeFormat} 
+                    onClick={() => handleDegreeFormatChange(v)} />
+                  <label>{v}</label>
+                </div>
+              )
+            })
+          }
         </div>
-        <h2>Operators</h2>
-        <button onClick={() => handleCalculate(points, radius)}>Calculate</button>
-        <button onClick={handleSave}>Save</button>
-      </div>
-      <div className="panel">
-        <h2>Execution</h2>
-        <button onClick={() => handleCalculate(points, radius)}>Calculate</button>
-        <button onClick={handleSave}>Save</button>
+        <button onClick={() => handleCalculate(points, radius)}>计算</button>
       </div>
     </div>
   );
