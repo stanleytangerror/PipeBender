@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './PipeBender.css';
 import { Vec3 } from 'vec3';
-import { Arc, Segment, BendedPipe, calcPipe, calcArcsAngle } from './Geometry';
+import { Arc, Segment, BendedPipe, calcPipe, calcArcsAngle, range } from './Geometry';
 
 enum DegreeDisplayFormat { Format1 = '0.00°', Format2 = `0°00'` }
 
@@ -124,6 +124,11 @@ function PipeBender() {
     setDisplayStyle(updatedStyle);
   }
 
+  const handlePointReinitialize = () => {
+    const newPoints = range(0, 3).map(_ => new Vec3(0, 0, 0));
+    setPoints(newPoints);
+  }
+
   const handlePointReset = (index: number) => {
     const updatedPoints = [...points];
     updatedPoints[index] = new Vec3(0, 0, 0);
@@ -145,6 +150,9 @@ function PipeBender() {
       <div className="left-col">
         <div className="panel panel-points">
           <h2>空间点</h2>
+          <div>
+            <button onClick={() => handlePointReinitialize()}>重置</button>
+          </div>
           <table>
             <thead>
               <tr>

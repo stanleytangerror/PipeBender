@@ -58,7 +58,7 @@ export class BendedPipe
   }
 }
 
-function Range(start: number, end: number) {
+export function range(start: number, end: number) {
   const gen = function*(start: number, end: number): Iterable<number> {
     for (let i = start; i < end; ++i) yield i;
   };
@@ -96,10 +96,10 @@ function calcCurve(points: [Vec3, Vec3, Vec3], radius: number) {
 
 export function calcPipe(points: Array<Vec3>, radius: number) {
   
-  const arcs = Range(1, points.length - 1)
+  const arcs = range(1, points.length - 1)
     .map(i => calcCurve([points[i - 1], points[i], points[i + 1]], radius));
 
-  const segments = Range(0, points.length - 1)
+  const segments = range(0, points.length - 1)
     .map((_, i) => new Segment(points[i], points[i + 1]));
   segments
     .forEach((s, i) => {
