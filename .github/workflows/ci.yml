@@ -17,6 +17,7 @@ jobs:
     strategy:
       matrix:
         node-version: [16.x]
+        working-directory: [./pipe-bender]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
@@ -27,6 +28,4 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
     - run: npm run build
-      working-directory: ./pipe-bender
     - run: npm test
-      working-directory: ./pipe-bender
