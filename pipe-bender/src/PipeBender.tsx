@@ -55,7 +55,7 @@ function CalculateResultUI(props: { result: BendedPipe, style: DisplayStyle }) {
   const bendedPipe = props.result;
   const style = props.style;
 
-  let sequence: Array<{ no: number, item: Segment }> = [];
+  let sequence: Array<{ no: number, item: Segment | Arc }> = [];
   let i = 0;
   for (; i < bendedPipe.arcs.length; ++i) {
     sequence.push({ no: i + 1, item: bendedPipe.segments[i] });

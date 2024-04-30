@@ -1,5 +1,19 @@
 import { Vec3 } from 'vec3';
 
+enum GeometryConst {
+  Eps = 1e-10
+}
+
+export function radianToDegree(radian: number) {
+  return radian / Math.PI * 180;
+}
+
+function assert(condition: boolean, message: string): void {
+  if (!condition) {
+      throw new Error(message);
+  }
+}
+
 export class Arc
 {
   center: Vec3;
@@ -31,10 +45,14 @@ export class Segment
 {
   start: Vec3;
   end: Vec3;
+  dirRough: Vec3;
 
   constructor(start: Vec3, end: Vec3) {
     this.start = start;
     this.end = end;
+    this.dirRough = end.clone().subtract(start);
+
+    assert(this.start.clone().distanceSquared(this.end) > GeometryConst.Eps ** 2, `Points too close: ${this.start}, ${this.end} `);
   }
 
   length() {
