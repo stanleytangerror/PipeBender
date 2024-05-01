@@ -8,9 +8,22 @@ export function radianToDegree(radian: number) {
   return radian / Math.PI * 180;
 }
 
+export class GeometryError extends Error {
+  constructor(message?: string) {
+      // Call the superclass constructor with the error message
+      super(message);
+
+      // Set the prototype explicitly.
+      Object.setPrototypeOf(this, GeometryError.prototype);
+
+      // Set additional properties or customize behavior if needed
+      this.name = 'GeometryError'; // Optionally set the error name
+  }
+}
+
 function assert(condition: boolean, message: string): void {
   if (!condition) {
-      throw new Error(message);
+      throw new GeometryError(message);
   }
 }
 

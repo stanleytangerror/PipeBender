@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './PipeBender.css';
 import { Vec3 } from 'vec3';
-import { Arc, Segment, BendedPipe, calcPipe, calcArcsAngle, range } from './Geometry';
+import { Arc, Segment, BendedPipe, GeometryError, calcPipe, calcArcsAngle, range } from './Geometry';
 
 enum DegreeDisplayFormat { Format1 = '0.00°', Format2 = `0°00'` }
 
@@ -94,7 +94,10 @@ function CalculateResultUI(props: { result: BendedPipe, style: DisplayStyle }) {
 }
 
 function PipeBender() {
-  const [points, setPoints] = useState<Array<Vec3>>([new Vec3(0, 0, 0), new Vec3(0, 0, -900), new Vec3(300, 1000, -300), new Vec3(300, 2000, -300)]);
+  const [points, setPoints] = useState<Array<Vec3>>(
+    (process.env.NODE_ENV === 'development') ?
+      [new Vec3(0, 0, 0), new Vec3(0, 0, -900), new Vec3(300, 1000, -300), new Vec3(300, 2000, -300)] :
+      [new Vec3(0, 0, 0), new Vec3(0, 0, 0), new Vec3(0, 0, 0)]);
   const [radius, setRadius] = useState<number>(200);
   const [displayStyle, setDisplayStyle] = useState<DisplayStyle>({ radianRoundDigits: 2, lengthRoundDigits: 1, degreeFormat: DegreeDisplayFormat.Format1 });
   const [bendedPipe, setCalculateResult] = useState<BendedPipe | null>(null);
@@ -114,8 +117,17 @@ function PipeBender() {
 
   const handleCalculate = (points: Vec3[], radius: number) => {
     if (points.length >= 3) {
-      const calcResult = calcPipe(points, radius);
-      setCalculateResult(calcResult);
+      try {
+        const calcResult = calcPipe(points, radius);
+        setCalculateResult(calcResult);
+      }
+      catch (error) {
+        if (error instanceof GeometryError) {
+          window.alert(error.message);
+        } else {
+          throw error;
+        }
+      }
     }
   };
 
