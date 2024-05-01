@@ -52,12 +52,27 @@ export class Segment
     this.end = end;
     this.dirRough = end.clone().subtract(start);
 
-    assert(this.start.clone().distanceSquared(this.end) > GeometryConst.Eps ** 2, `Points too close: ${this.start}, ${this.end} `);
+    assert(this.start.clone().distanceSquared(this.end) > GeometryConst.Eps ** 2, `Points too close: ${this.start}, ${this.end}`);
   }
 
   length() {
     return this.start.clone().distanceTo(this.end);
   }
+
+  adjustStart(p: Vec3) {
+    this.start = p;
+
+    const newDir = this.end.clone().subtract(this.start);
+    assert(this.dirRough.clone().innerProduct(newDir) > GeometryConst.Eps, `Segment not long enough`);
+  }
+
+  adjustEnd(p: Vec3) {
+    this.end = p;
+
+    const newDir = this.end.clone().subtract(this.start);
+    assert(this.dirRough.clone().innerProduct(newDir) > GeometryConst.Eps, `Segment not long enough`);
+  }
+
 }
 
 export class BendedPipe
@@ -122,10 +137,10 @@ export function calcPipe(points: Array<Vec3>, radius: number) {
   segments
     .forEach((s, i) => {
       if (i < arcs.length) {
-        s.end = arcs[i].start;
+        s.adjustEnd(arcs[i].start);
       } 
       if (i > 0) {
-        s.start = arcs[i - 1].end;
+        s.adjustStart(arcs[i - 1].end);
       }
     });
   
