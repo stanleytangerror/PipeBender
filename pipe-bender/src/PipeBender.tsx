@@ -32,7 +32,7 @@ function CurveSegmentUI(props: { no: number, curve: Arc, style: DisplayStyle }) 
   const style = props.style;
 
   return (
-    <tr>
+    <tr key={`arc_${no}`}>
       <th>弯头{no}长度/角度</th>
       <th>
         {curve.length().toFixed(style.lengthRoundDigits)}/{radianFormat(curve.centralAngle, style.degreeFormat, style.radianRoundDigits)}
@@ -47,7 +47,7 @@ function StraightSegmentUI(props: { no: number, straight: Segment, style: Displa
   const style = props.style;
   
   return (
-    <tr>
+    <tr key={`straight_${no}`}>
       <th>直段{no}长度</th>
       <th>{straight.length().toFixed(style.lengthRoundDigits)}</th>
     </tr>
@@ -80,7 +80,7 @@ function CalculateResultUI(props: { result: BendedPipe, style: DisplayStyle }) {
       }
       {
         arcAngles.map((v, index) => (
-        <tr>
+        <tr key={`arcAngle_${index + 1}-${index + 2}`}>
           <th>弯头{index + 1}-{index + 2}斜势</th>
           <th>
             {radianFormat(v, style.degreeFormat, style.radianRoundDigits)}
@@ -88,7 +88,7 @@ function CalculateResultUI(props: { result: BendedPipe, style: DisplayStyle }) {
         </tr>
         ))
       }
-      <tr>
+      <tr key={'totalLength'}>
         <th>展开长度</th>
         <th>{bendedPipe.totalLength().toFixed(style.lengthRoundDigits)}</th>
       </tr>
@@ -131,7 +131,7 @@ function PointsUI(props: {
       </div>
       <table>
         <thead>
-          <tr>
+          <tr key='points-head'>
             <th>No.</th>
             <th>X</th>
             <th>Y</th>
@@ -141,7 +141,7 @@ function PointsUI(props: {
         </thead>
         <tbody>
           {points.map((point, index) => (
-            <tr key={index}>
+            <tr key={`points_${index}`}>
               <th>
                 {index}
               </th>
@@ -185,7 +185,7 @@ function PipeUI(props: { bendedPipe: BendedPipe | null, displayStyle: DisplaySty
       <h2>计算结果</h2>
       <table>
         <thead>
-          <tr>
+          <tr key='result-header'>
             <th>项目</th>
             <th>取值</th>
           </tr>
