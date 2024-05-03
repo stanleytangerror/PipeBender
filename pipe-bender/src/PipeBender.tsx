@@ -278,7 +278,8 @@ function PipeBender() {
             <PipeUI bendedPipe={bendedPipe} displayStyle={displayStyle} />
           </Row>
         </Col>
-        <Col sm={2}>
+        <Col>
+          <h2>控制</h2>
           <div>
             弯管半径:
             <input
@@ -297,8 +298,8 @@ function PipeBender() {
                     <input 
                       type="radio" 
                       name="radianFormatGroup" 
-                      checked={v === displayStyle.degreeFormat} 
-                      onClick={() => handleDegreeFormatChange(v)} />
+                      defaultChecked={v === DegreeDisplayFormat.Format1} 
+                      onChange={() => handleDegreeFormatChange(v)} />
                     <label>{v}</label>
                   </div>
                 )
