@@ -5,6 +5,12 @@ import { Arc, Segment, BendedPipe, GeometryError, calcPipe, calcArcsAngle, range
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
+import ListGroup from 'react-bootstrap/ListGroup';
+import Form from 'react-bootstrap/Form';
+import InputGroup from 'react-bootstrap/InputGroup';
+import Button from 'react-bootstrap/Button';
+import Stack from 'react-bootstrap/Stack';
+import Table from 'react-bootstrap/Table';
 
 enum DegreeDisplayFormat { Format1 = '0.00°', Format2 = `0°00'` }
 
@@ -100,16 +106,16 @@ function ErrorsUI(props: { errors: Array<GeometryError> }) {
   const errors = props.errors;
 
   return (
-    <div>
+    <Stack>
       <h2>错误记录</h2>
-      <ul>
+      <ListGroup>
       {
         errors.map(e => (
-          <li><span>[{e.date.toLocaleString()}]</span> {e.message}</li>
+          <ListGroup.Item variant="danger"><span>[{e.date.toLocaleString()}]</span> {e.message}</ListGroup.Item>
         ))
       }
-      </ul>
-    </div>
+      </ListGroup>
+    </Stack>
   );
 }
 
@@ -126,53 +132,38 @@ function PointsUI(props: {
   return (
     <div>
       <h2>空间点</h2>
-      <div>
-        <button onClick={() => props.handlePointReinitialize()}>重置</button>
-      </div>
-      <table>
-        <thead>
-          <tr key='points-head'>
-            <th>No.</th>
-            <th>X</th>
-            <th>Y</th>
-            <th>Z</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {points.map((point, index) => (
-            <tr key={`points_${index}`}>
-              <th>
-                {index}
-              </th>
-              <th><input
+      <Stack gap={3}>
+      <Button variant="outline-secondary" onClick={() => props.handlePointReinitialize()}>重置</Button>
+      {points.map((point, index) => (
+        <Stack gap={1}>
+          <Stack direction="horizontal" gap={3}>
+            <InputGroup className='mb-3'>
+              <InputGroup.Text id={`point_${index}_coord`}>{`#${index + 1}`}</InputGroup.Text>
+              <Form.Control
                 type="number"
                 value={point.x}
                 onChange={(e) => props.handlePointChange(index, 'x', parseFloat(e.target.value))}
-              /></th>
-              <th><input
+              />
+              <Form.Control
                 type="number"
                 value={point.y}
                 onChange={(e) => props.handlePointChange(index, 'y', parseFloat(e.target.value))}
-              /></th>
-              <th><input
+              />
+              <Form.Control
                 type="number"
                 value={point.z}
                 onChange={(e) => props.handlePointChange(index, 'z', parseFloat(e.target.value))}
-              /></th>
-              <th>
-                <div>
-                  <button onClick={() => props.handlePointReset(index)}>归零</button>
-                  <button onClick={() => props.handlePointDelete(index)}>删除</button>
-                </div>
-                  <button onClick={() => props.handlePointInsert(index)}>插入</button>
-                <div>
-                </div>
-              </th>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+              />
+              <Button variant="outline-secondary" onClick={() => props.handlePointReset(index)}>归零</Button>
+            </InputGroup>
+            <Button variant="outline-danger" onClick={() => props.handlePointDelete(index)}>删除</Button>
+          </Stack>
+          <InputGroup>
+              <Button variant="outline-secondary" onClick={() => props.handlePointInsert(index)}>插入</Button>
+          </InputGroup>
+        </Stack>
+      ))}
+      </Stack>
     </div>);
 }
 
@@ -181,9 +172,9 @@ function PipeUI(props: { bendedPipe: BendedPipe | null, displayStyle: DisplaySty
   const displayStyle = props.displayStyle;
   
   return (
-    <div>
+    <Stack>
       <h2>计算结果</h2>
-      <table>
+      <Table striped bordered>
         <thead>
           <tr key='result-header'>
             <th>项目</th>
@@ -191,8 +182,8 @@ function PipeUI(props: { bendedPipe: BendedPipe | null, displayStyle: DisplaySty
           </tr>
         </thead>
         {bendedPipe !== null ? <CalculateResultUI result={bendedPipe} style={displayStyle} /> : null}
-      </table>
-    </div>);
+      </Table>
+    </Stack>);
 }
 
 function PipeBender() {
@@ -280,33 +271,35 @@ function PipeBender() {
         </Col>
         <Col>
           <h2>控制</h2>
-          <div>
-            弯管半径:
-            <input
+          <Stack gap={3}>
+          <InputGroup className='mb-3'>
+            <InputGroup.Text>弯管半径</InputGroup.Text>
+            <Form.Control
               type="number"
               value={radius}
               onChange={(e) => setRadius(parseFloat(e.target.value))}
             />
-          </div>
-          <div>
-            <span>角度格式</span>
+          </InputGroup>
+          <InputGroup className='mb-3'>
+            <InputGroup.Text>角度格式</InputGroup.Text>
             {
               Object.keys(DegreeDisplayFormat).map(k => {
                 const v = DegreeDisplayFormat[k as keyof typeof DegreeDisplayFormat];
                 return (
-                  <div>
-                    <input 
-                      type="radio" 
-                      name="radianFormatGroup" 
-                      defaultChecked={v === DegreeDisplayFormat.Format1} 
-                      onChange={() => handleDegreeFormatChange(v)} />
-                    <label>{v}</label>
-                  </div>
-                )
+                  <Form.Check
+                    inline
+                    label={v}
+                    name='radianFormatGroup'
+                    type='radio'
+                    defaultChecked={v === DegreeDisplayFormat.Format1} 
+                    id={`radianFormatGroup-${v}`}
+                    onChange={() => handleDegreeFormatChange(v)} />
+                );
               })
             }
-          </div>
-          <button onClick={() => handleCalculate(points, radius)}>计算</button>
+          </InputGroup>
+          <Button onClick={() => handleCalculate(points, radius)}>计算</Button>
+          </Stack>
         </Col>
       </Row>
       <Row>
