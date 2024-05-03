@@ -93,6 +93,20 @@ function CalculateResultUI(props: { result: BendedPipe, style: DisplayStyle }) {
   );                    
 }
 
+function ErrorsUI(props: { errors: Array<GeometryError> }) {
+  const errors = props.errors;
+
+  return (
+    <ul>
+    {
+      errors.map(e => (
+        <li><span>[{e.date.toLocaleString()}]</span> {e.message}</li>
+      ))
+    }
+    </ul>
+  );
+}
+
 function PipeBender() {
   const [points, setPoints] = useState<Array<Vec3>>(
     (process.env.NODE_ENV === 'development') ?
@@ -101,6 +115,7 @@ function PipeBender() {
   const [radius, setRadius] = useState<number>(200);
   const [displayStyle, setDisplayStyle] = useState<DisplayStyle>({ radianRoundDigits: 2, lengthRoundDigits: 1, degreeFormat: DegreeDisplayFormat.Format1 });
   const [bendedPipe, setCalculateResult] = useState<BendedPipe | null>(null);
+  const [errors, setErrors] = useState<Array<GeometryError>>([]);
 
   const handlePointChange = (index: number, field: keyof Vec3, value: number) => {
     const updatedPoints = [...points];
@@ -123,7 +138,8 @@ function PipeBender() {
       }
       catch (error) {
         if (error instanceof GeometryError) {
-          window.alert(error.message);
+          const newErrors = [...errors, error];
+          setErrors(newErrors);
         } else {
           throw error;
         }
@@ -251,6 +267,9 @@ function PipeBender() {
           }
         </div>
         <button onClick={() => handleCalculate(points, radius)}>计算</button>
+      </div>
+      <div className="panel panel-logging">
+        <ErrorsUI errors={errors} />
       </div>
     </div>
   );

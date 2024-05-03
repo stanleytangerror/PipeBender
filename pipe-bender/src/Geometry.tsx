@@ -9,6 +9,8 @@ export function radianToDegree(radian: number) {
 }
 
 export class GeometryError extends Error {
+  readonly date: Date;
+  
   constructor(message?: string) {
       // Call the superclass constructor with the error message
       super(message);
@@ -18,6 +20,7 @@ export class GeometryError extends Error {
 
       // Set additional properties or customize behavior if needed
       this.name = 'GeometryError'; // Optionally set the error name
+      this.date = new Date();
   }
 }
 
