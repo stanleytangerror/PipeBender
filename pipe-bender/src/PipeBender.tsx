@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import './PipeBender.css';
 import { Vec3 } from 'vec3';
 import { Arc, Segment, BendedPipe, GeometryError, calcPipe, calcArcsAngle, range } from './Geometry';
+import Container from 'react-bootstrap/Container';
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
 
 enum DegreeDisplayFormat { Format1 = '0.00°', Format2 = `0°00'` }
 
@@ -97,14 +100,99 @@ function ErrorsUI(props: { errors: Array<GeometryError> }) {
   const errors = props.errors;
 
   return (
-    <ul>
-    {
-      errors.map(e => (
-        <li><span>[{e.date.toLocaleString()}]</span> {e.message}</li>
-      ))
-    }
-    </ul>
+    <div>
+      <h2>错误记录</h2>
+      <ul>
+      {
+        errors.map(e => (
+          <li><span>[{e.date.toLocaleString()}]</span> {e.message}</li>
+        ))
+      }
+      </ul>
+    </div>
   );
+}
+
+function PointsUI(props: { 
+  points: Array<Vec3>, 
+  handlePointReinitialize: () => void,
+  handlePointChange: (index: number, field: keyof Vec3, value: number) => void,
+  handlePointReset: (index: number) => void,
+  handlePointDelete: (index: number) => void,
+  handlePointInsert: (index: number) => void,
+}) {
+  const points = props.points;
+
+  return (
+    <div>
+      <h2>空间点</h2>
+      <div>
+        <button onClick={() => props.handlePointReinitialize()}>重置</button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>No.</th>
+            <th>X</th>
+            <th>Y</th>
+            <th>Z</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {points.map((point, index) => (
+            <tr key={index}>
+              <th>
+                {index}
+              </th>
+              <th><input
+                type="number"
+                value={point.x}
+                onChange={(e) => props.handlePointChange(index, 'x', parseFloat(e.target.value))}
+              /></th>
+              <th><input
+                type="number"
+                value={point.y}
+                onChange={(e) => props.handlePointChange(index, 'y', parseFloat(e.target.value))}
+              /></th>
+              <th><input
+                type="number"
+                value={point.z}
+                onChange={(e) => props.handlePointChange(index, 'z', parseFloat(e.target.value))}
+              /></th>
+              <th>
+                <div>
+                  <button onClick={() => props.handlePointReset(index)}>归零</button>
+                  <button onClick={() => props.handlePointDelete(index)}>删除</button>
+                </div>
+                  <button onClick={() => props.handlePointInsert(index)}>插入</button>
+                <div>
+                </div>
+              </th>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>);
+}
+
+function PipeUI(props: { bendedPipe: BendedPipe | null, displayStyle: DisplayStyle }) {
+  const bendedPipe = props.bendedPipe;
+  const displayStyle = props.displayStyle;
+  
+  return (
+    <div>
+      <h2>计算结果</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>项目</th>
+            <th>取值</th>
+          </tr>
+        </thead>
+        {bendedPipe !== null ? <CalculateResultUI result={bendedPipe} style={displayStyle} /> : null}
+      </table>
+    </div>);
 }
 
 function PipeBender() {
@@ -174,104 +262,56 @@ function PipeBender() {
   }
 
   return (
-    <div className="container">
-      <div className="left-col">
-        <div className="panel panel-points">
-          <h2>空间点</h2>
+    <Container fluid>
+      <Row>
+        <Col sm={8}>
+          <Row>
+            <PointsUI 
+              points={points}
+              handlePointReinitialize={handlePointReinitialize}
+              handlePointChange={handlePointChange}
+              handlePointDelete={handlePointDelete}
+              handlePointInsert={handlePointInsert}
+              handlePointReset={handlePointReset} />
+          </Row>
+          <Row>
+            <PipeUI bendedPipe={bendedPipe} displayStyle={displayStyle} />
+          </Row>
+        </Col>
+        <Col sm={2}>
           <div>
-            <button onClick={() => handlePointReinitialize()}>重置</button>
+            弯管半径:
+            <input
+              type="number"
+              value={radius}
+              onChange={(e) => setRadius(parseFloat(e.target.value))}
+            />
           </div>
-          <table>
-            <thead>
-              <tr>
-                <th>No.</th>
-                <th>X</th>
-                <th>Y</th>
-                <th>Z</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {points.map((point, index) => (
-                <tr key={index}>
-                  <th>
-                    {index}
-                  </th>
-                  <th><input
-                    type="number"
-                    value={point.x}
-                    onChange={(e) => handlePointChange(index, 'x', parseFloat(e.target.value))}
-                  /></th>
-                  <th><input
-                    type="number"
-                    value={point.y}
-                    onChange={(e) => handlePointChange(index, 'y', parseFloat(e.target.value))}
-                  /></th>
-                  <th><input
-                    type="number"
-                    value={point.z}
-                    onChange={(e) => handlePointChange(index, 'z', parseFloat(e.target.value))}
-                  /></th>
-                  <th>
-                    <div>
-                      <button onClick={() => handlePointReset(index)}>归零</button>
-                      <button onClick={() => handlePointDelete(index)}>删除</button>
-                    </div>
-                      <button onClick={() => handlePointInsert(index)}>插入</button>
-                    <div>
-                    </div>
-                  </th>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="panel panel-results">
-          <h2>计算结果</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>项目</th>
-                <th>取值</th>
-              </tr>
-            </thead>
-            {bendedPipe !== null ? <CalculateResultUI result={bendedPipe} style={displayStyle} /> : null}
-          </table>
-        </div>
-      </div>
-      <div className="panel right-col">
-        <div>
-          弯管半径:
-          <input
-            type="number"
-            value={radius}
-            onChange={(e) => setRadius(parseFloat(e.target.value))}
-          />
-        </div>
-        <div>
-          <span>角度格式</span>
-          {
-            Object.keys(DegreeDisplayFormat).map(k => {
-              const v = DegreeDisplayFormat[k as keyof typeof DegreeDisplayFormat];
-              return (
-                <div>
-                  <input 
-                    type="radio" 
-                    name="radianFormatGroup" 
-                    checked={v === displayStyle.degreeFormat} 
-                    onClick={() => handleDegreeFormatChange(v)} />
-                  <label>{v}</label>
-                </div>
-              )
-            })
-          }
-        </div>
-        <button onClick={() => handleCalculate(points, radius)}>计算</button>
-      </div>
-      <div className="panel panel-logging">
+          <div>
+            <span>角度格式</span>
+            {
+              Object.keys(DegreeDisplayFormat).map(k => {
+                const v = DegreeDisplayFormat[k as keyof typeof DegreeDisplayFormat];
+                return (
+                  <div>
+                    <input 
+                      type="radio" 
+                      name="radianFormatGroup" 
+                      checked={v === displayStyle.degreeFormat} 
+                      onClick={() => handleDegreeFormatChange(v)} />
+                    <label>{v}</label>
+                  </div>
+                )
+              })
+            }
+          </div>
+          <button onClick={() => handleCalculate(points, radius)}>计算</button>
+        </Col>
+      </Row>
+      <Row>
         <ErrorsUI errors={errors} />
-      </div>
-    </div>
+      </Row>
+    </Container>
   );
 };
 
